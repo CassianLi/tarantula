@@ -10,8 +10,9 @@ builds:
     goos:
       - linux
       - windows
+
 archives:
-  - files:
+- files:
       - conf.ini
       - README.md
   replacements:
