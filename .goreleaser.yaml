@@ -15,9 +15,9 @@ archives:
       linux: Linux
       windows: Windows
       amd64: x86_64
-  files:
-    - conf.ini
-    - README.md
+  - files:
+      - conf.ini
+      - README.md
 
 checksum:
   name_template: 'checksums.txt'
