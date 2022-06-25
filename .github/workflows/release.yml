@@ -21,9 +21,6 @@ jobs:
         with:
           go-version: 1.18
 
-      - name: Download dependencies
-        run: go mod tidy
-
       - name: Create release on GitHub
         uses: goreleaser/goreleaser-action@v3
         with:
