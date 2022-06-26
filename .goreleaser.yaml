@@ -10,21 +10,23 @@ builds:
     goos:
       - linux
       - windows
+      - darwin
 
 archives:
-- files:
+  - files:
       - conf.ini
       - README.md
-  replacements:
-    linux: Linux
-    windows: Windows
-    amd64: x86_64
+    replacements:
+      linux: Linux
+      windows: Windows
+      amd64: x86_64
+      darwin: macOS
 
 
 checksum:
   name_template: 'checksums.txt'
 snapshot:
-  name_template: "{{ incpatch .Version }}-next"
+  name_template: "{{ incpatch .Tag }}-next"
 changelog:
   sort: asc
   filters:
