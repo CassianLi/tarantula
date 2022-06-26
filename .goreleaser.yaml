@@ -9,7 +9,6 @@ builds:
       - CGO_ENABLED=0
     goos:
       - linux
-      - windows
       - darwin
 
 archives:
@@ -18,7 +17,6 @@ archives:
       - README.md
     replacements:
       linux: Linux
-      windows: Windows
       amd64: x86_64
       darwin: macOS
 
