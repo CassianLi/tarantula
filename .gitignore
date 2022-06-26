@@ -6,7 +6,10 @@
 **test**
 **local**
 **dev**
-dist/
 **.sum
 
 
+
+dist/
+/tarantula
+/.goreleaser.yaml
