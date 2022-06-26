@@ -10,3 +10,5 @@ dist/
 **.sum
 
 dist/
+
+.goreleaser.yaml
