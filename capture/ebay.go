@@ -8,11 +8,15 @@ import (
 	"os"
 	"regexp"
 	"strconv"
+	"y-clouds.com/tarantula/tools"
 )
 
 const (
 	// EBAY_URL_PREFIX is the ebay url prefix
-	EBAY_URL_PREFIX = "https://www.ebay.com/itm/%v"
+	EBAY_URL_PREFIX            = "https://www.ebay.com/itm/%v"
+	EBAY_DETAIL_ELE_ID         = "CenterPanelInternal"
+	EBAY_DESRIPTION_ELE_ID     = "vi-desc-maincntr"
+	EBAY_DESRIPTION_WRAPPER_ID = "desc_wrapper_ctr"
 )
 
 // Ebay is the ebay params
@@ -62,6 +66,39 @@ func reSizeBrowserWindow(wd selenium.WebDriver) selenium.WebDriver {
 	}
 
 	return wd
+}
+
+// elementScreenshots Take a screenshot of an element
+func elementScreenshots(wd selenium.WebDriver, eleId string) []byte {
+	ele, err := wd.FindElement(selenium.ByID, eleId)
+	if err != nil {
+		log.Printf("By.ID %s ele.error: %v", eleId, err)
+	}
+
+	eleImage, err := ele.Screenshot(true)
+
+	if err != nil {
+		log.Printf("By.ID %s, screenshot.error:%v", eleId, err)
+	}
+
+	return eleImage
+}
+
+func getDescriptionCutSize(wd selenium.WebDriver, eleId string, bottomId string) (int, int) {
+	ele, err := wd.FindElement(selenium.ByID, eleId)
+	if err != nil {
+		log.Printf("By.ID %s ele.error: %v", eleId, err)
+	}
+	size, _ := ele.Size()
+
+	bootomEle, err := wd.FindElement(selenium.ByID, bottomId)
+	if err != nil {
+		log.Printf("By.ID %s ele.error: %v", eleId, err)
+	}
+
+	bottomSize, _ := bootomEle.Size()
+
+	return size.Width, size.Height - bottomSize.Height
 }
 
 // WebScreenshots
@@ -120,7 +157,7 @@ func (ebay Ebay) WebScreenshots() (float32, []byte, string) {
 	}
 
 	// Resize window
-	wd = reSizeBrowserWindow(wd)
+	//wd = reSizeBrowserWindow(wd)
 
 	// Get price panel
 	elem, err := wd.FindElement(selenium.ByXPATH, "//*[@id=\"prcIsum\"]")
@@ -137,11 +174,25 @@ func (ebay Ebay) WebScreenshots() (float32, []byte, string) {
 	price := getPrice(priceText)
 
 	// Screenshot
-	byteImg, err := wd.Screenshot()
+	// cut two image to one
+	detailImgBytes := elementScreenshots(wd, EBAY_DETAIL_ELE_ID)
+
+	descriptionImgBytes := elementScreenshots(wd, EBAY_DESRIPTION_ELE_ID)
+
+	// cut picture
+	width, height := getDescriptionCutSize(wd, EBAY_DESRIPTION_ELE_ID, EBAY_DESRIPTION_WRAPPER_ID)
+	descriptionImgBytes, err = tools.CutPicture(descriptionImgBytes, 0, 0, width, height)
+	if err != nil {
+		log.Printf("Resize(%d, %d) descriptionImgBytes.error: %v", width, height, err)
+	}
+
+	// splice
+	screenshotBytes, err := tools.SplicePicsBytes(detailImgBytes, descriptionImgBytes, true, "png")
+
 	if err != nil {
 		log.Println("screenshot.error: ", err)
 		return price, nil, string(SCREENSHOT_ERROR)
 	}
 
-	return price, byteImg, string(SUCEESS)
+	return price, screenshotBytes, string(SUCEESS)
 }
