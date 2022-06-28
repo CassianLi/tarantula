@@ -38,11 +38,15 @@ func (ebay Ebay) url() string {
 func getPrice(text string) float32 {
 	reg := regexp.MustCompile(`\d+\.\d+`)
 	s := reg.FindAllString(text, -1)
+	fmt.Println("FindAllString", s)
 	if len(s) > 0 {
+		fmt.Println("price text: ", s[0])
 		price, err := strconv.ParseFloat(s[0], 32)
 		if err != nil {
-			return float32(price)
+			fmt.Printf("Parse float32.error: %v", err)
+			return 0.0
 		}
+		return float32(price)
 	}
 	return 0.0
 }
@@ -172,6 +176,8 @@ func (ebay Ebay) WebScreenshots() (float32, []byte, string) {
 	}
 	fmt.Println("price text: ", priceText)
 	price := getPrice(priceText)
+
+	fmt.Println("price: ", price)
 
 	// Screenshot
 	// cut two image to one
