@@ -12,7 +12,7 @@ import (
 	"y-clouds.com/tarantula/oss"
 )
 
-var confFile = flag.String("c", "./conf.ini", "Snapshot tool configuration file.")
+var confFile = flag.String("c", "./conf-local.ini", "Snapshot tool configuration file.")
 
 // AppConf is the config of app
 type AppConf struct {

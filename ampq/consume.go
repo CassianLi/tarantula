@@ -17,21 +17,24 @@ func Consume(rabbit *Rabbit, callback func(msg string)) {
 	if err != nil {
 		log.Fatalf("channel.open: %s", err)
 	}
-	// declare exchange
-	err = c.ExchangeDeclare(rabbit.Exchange, "direct", true, false, false, false, nil)
-	if err != nil {
-		log.Fatalf("exchange.declare: %s", err)
-	}
 	// declare queue
 	_, err = c.QueueDeclare(rabbit.Queue, true, false, false, false, nil)
 	if err != nil {
 		log.Fatalf("queue.declare: %v", err)
 	}
 
-	// bind queue on exchange
-	err = c.QueueBind(rabbit.Queue, rabbit.Queue, rabbit.Exchange, false, nil)
-	if err != nil {
-		log.Fatalf("queue.bind: %v", err)
+	if rabbit.Exchange != "" {
+		// declare exchange
+		err = c.ExchangeDeclare(rabbit.Exchange, "direct", true, false, false, false, nil)
+		if err != nil {
+			log.Fatalf("exchange.declare: %s", err)
+		}
+
+		// bind queue on exchange
+		err = c.QueueBind(rabbit.Queue, rabbit.Queue, rabbit.Exchange, false, nil)
+		if err != nil {
+			log.Fatalf("queue.bind: %v", err)
+		}
 	}
 
 	// Set qos

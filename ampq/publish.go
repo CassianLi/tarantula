@@ -25,21 +25,24 @@ func Publish(rabbit *Rabbit, message string) {
 	if err != nil {
 		log.Fatalf("channel.open: %s", err)
 	}
-
-	err = c.ExchangeDeclare(rabbit.Exchange, "direct", true, false, false, false, nil)
-	if err != nil {
-		log.Fatalf("exchange.declare: %v", err)
-	}
-	// declare queue and bind it to exchange
 	_, err = c.QueueDeclare(rabbit.Queue, true, false, false, false, nil)
 	if err != nil {
 		log.Fatalf("queue.declare: %v", err)
 	}
 
-	err = c.QueueBind(rabbit.Queue, rabbit.Queue, rabbit.Exchange, true, nil)
+	// exchange is empty， use the default exchange of rabbitMQ
+	// else declare exchange and bind queue on it
+	if rabbit.Exchange != "" {
+		// declare queue and bind it to exchange
+		err = c.ExchangeDeclare(rabbit.Exchange, "direct", true, false, false, false, nil)
+		if err != nil {
+			log.Fatalf("exchange.declare: %v", err)
+		}
 
-	if err != nil {
-		log.Fatalf("queue.bind: %v", err)
+		err = c.QueueBind(rabbit.Queue, rabbit.Queue, rabbit.Exchange, true, nil)
+		if err != nil {
+			log.Fatalf("queue.bind: %v", err)
+		}
 	}
 
 	// Prepare this message to be persistent.  Your publishing requirements may
