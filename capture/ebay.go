@@ -30,7 +30,7 @@ type Ebay struct {
 //  @Description: Make url of ebay
 //  @receiver ebay
 //  @return string
-func (ebay Ebay) url() string {
+func (ebay Ebay) Url() string {
 	return fmt.Sprintf(EBAY_URL_PREFIX, ebay.Asin)
 }
 
@@ -155,7 +155,7 @@ func (ebay Ebay) WebScreenshots() (float32, []byte, string) {
 	defer wd.Quit()
 
 	// Navigate to the simple playground interface.
-	if err := wd.Get(ebay.url()); err != nil {
+	if err := wd.Get(ebay.Url()); err != nil {
 		log.Println("web.open:", err)
 		return 0.0, nil, string(PAGE_ERROR)
 	}
@@ -200,5 +200,5 @@ func (ebay Ebay) WebScreenshots() (float32, []byte, string) {
 		return price, nil, string(SCREENSHOT_ERROR)
 	}
 
-	return price, screenshotBytes, string(SUCEESS)
+	return price, screenshotBytes, string(SUCCESS)
 }
