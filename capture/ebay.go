@@ -75,6 +75,7 @@ func reSizeBrowserWindow(wd selenium.WebDriver) selenium.WebDriver {
 func elementScreenshots(wd selenium.WebDriver, eleId string) ([]byte, error) {
 	ele, err := wd.FindElement(selenium.ByID, eleId)
 	if err != nil {
+		fmt.Println("By.ID ElementScreenshots error:", err)
 		return nil, err
 	}
 
@@ -182,13 +183,14 @@ func (ebay Ebay) WebScreenshots() (float32, []byte, string) {
 	// Screenshot
 	// cut two image to one
 	detailImgBytes, err := elementScreenshots(wd, EBAY_DETAIL_ELE_ID)
-	if err != nil {
+	if err != nil || len(detailImgBytes) == 0 {
 		log.Printf("Cant find element by.ID: %s \n", EBAY_DETAIL_ELE_ID)
 		return price, nil, string(SCREENSHOT_ERROR)
 	}
+	fmt.Println("len(detailImgBytes): ", len(detailImgBytes))
 
 	descriptionImgBytes, err := elementScreenshots(wd, EBAY_DESRIPTION_ELE_ID)
-	if err != nil {
+	if err != nil || len(descriptionImgBytes) == 0 {
 		log.Printf("Cant find element by.ID: %s \n", EBAY_DESRIPTION_ELE_ID)
 		return price, nil, string(SCREENSHOT_ERROR)
 	}
@@ -202,13 +204,16 @@ func (ebay Ebay) WebScreenshots() (float32, []byte, string) {
 		}
 	}
 
-	// splice
-	screenshotBytes, err := tools.SplicePicsBytes(detailImgBytes, descriptionImgBytes, true, "png")
-
-	if err != nil {
-		log.Println("screenshot.error: ", err)
-		return price, nil, string(SCREENSHOT_ERROR)
+	if len(detailImgBytes) > 0 && len(descriptionImgBytes) > 0 {
+		// splice
+		screenshotBytes, err := tools.SplicePicsBytes(detailImgBytes, descriptionImgBytes, true, "png")
+		if err != nil {
+			log.Println("screenshot.error: ", err)
+			return price, nil, string(SCREENSHOT_ERROR)
+		}
+		return price, screenshotBytes, string(SUCEESS)
 	}
 
-	return price, screenshotBytes, string(SUCEESS)
+	return price, nil, string(SCREENSHOT_ERROR)
+
 }

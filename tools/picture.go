@@ -2,6 +2,7 @@ package tools
 
 import (
 	"bytes"
+	"fmt"
 	"image"
 	"image/draw"
 	"image/jpeg"
@@ -14,6 +15,7 @@ import (
 // SpliceImage Splice two image.Image picture
 func SpliceImage(image1 image.Image, image2 image.Image, vertical bool) *image.RGBA {
 	//starting position of the second image (bottom/left)
+	fmt.Println("image dx:", image1.Bounds().Dx())
 	sp2 := image.Point{X: image1.Bounds().Dx()}
 	if vertical {
 		sp2 = image.Point{Y: image1.Bounds().Dy()}
