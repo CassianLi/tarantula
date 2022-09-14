@@ -35,7 +35,7 @@ func (ebay Ebay) url() string {
 }
 
 // getPrice is a regular expression to get the price
-func getPrice(text string) float32 {
+func getPrice(text string) (float32, error) {
 	reg := regexp.MustCompile(`\d+\.\d+`)
 	s := reg.FindAllString(text, -1)
 	fmt.Println("FindAllString", s)
@@ -43,12 +43,11 @@ func getPrice(text string) float32 {
 		fmt.Println("price text: ", s[0])
 		price, err := strconv.ParseFloat(s[0], 32)
 		if err != nil {
-			fmt.Printf("Parse float32.error: %v", err)
-			return 0.0
+			return 0.0, err
 		}
-		return float32(price)
+		return float32(price), nil
 	}
-	return 0.0
+	return 0.0, nil
 }
 
 // reSizeBrowserWindow Resize the window, or return the original WebDriver
@@ -73,36 +72,35 @@ func reSizeBrowserWindow(wd selenium.WebDriver) selenium.WebDriver {
 }
 
 // elementScreenshots Take a screenshot of an element
-func elementScreenshots(wd selenium.WebDriver, eleId string) []byte {
+func elementScreenshots(wd selenium.WebDriver, eleId string) ([]byte, error) {
 	ele, err := wd.FindElement(selenium.ByID, eleId)
 	if err != nil {
-		log.Printf("By.ID %s ele.error: %v", eleId, err)
+		return nil, err
 	}
 
 	eleImage, err := ele.Screenshot(true)
-
 	if err != nil {
-		log.Printf("By.ID %s, screenshot.error:%v", eleId, err)
+		return nil, err
 	}
 
-	return eleImage
+	return eleImage, nil
 }
 
-func getDescriptionCutSize(wd selenium.WebDriver, eleId string, bottomId string) (int, int) {
+func getDescriptionCutSize(wd selenium.WebDriver, eleId string, bottomId string) (int, int, error) {
 	ele, err := wd.FindElement(selenium.ByID, eleId)
 	if err != nil {
-		log.Printf("By.ID %s ele.error: %v", eleId, err)
+		return 0, 0, err
 	}
 	size, _ := ele.Size()
 
 	bootomEle, err := wd.FindElement(selenium.ByID, bottomId)
 	if err != nil {
-		log.Printf("By.ID %s ele.error: %v", eleId, err)
+		return 0, 0, err
 	}
 
 	bottomSize, _ := bootomEle.Size()
 
-	return size.Width, size.Height - bottomSize.Height
+	return size.Width, size.Height - bottomSize.Height, nil
 }
 
 // WebScreenshots
@@ -174,22 +172,34 @@ func (ebay Ebay) WebScreenshots() (float32, []byte, string) {
 		log.Println("price.error:", err)
 		return 0.0, nil, string(PRICE_ERROR)
 	}
-	fmt.Println("price text: ", priceText)
-	price := getPrice(priceText)
 
-	fmt.Println("price: ", price)
+	fmt.Println("price text: ", priceText)
+	price, err := getPrice(priceText)
+	if err != nil {
+		return 0.0, nil, string(PRICE_ERROR)
+	}
 
 	// Screenshot
 	// cut two image to one
-	detailImgBytes := elementScreenshots(wd, EBAY_DETAIL_ELE_ID)
+	detailImgBytes, err := elementScreenshots(wd, EBAY_DETAIL_ELE_ID)
+	if err != nil {
+		log.Printf("Cant find element by.ID: %s \n", EBAY_DETAIL_ELE_ID)
+		return price, nil, string(SCREENSHOT_ERROR)
+	}
 
-	descriptionImgBytes := elementScreenshots(wd, EBAY_DESRIPTION_ELE_ID)
+	descriptionImgBytes, err := elementScreenshots(wd, EBAY_DESRIPTION_ELE_ID)
+	if err != nil {
+		log.Printf("Cant find element by.ID: %s \n", EBAY_DESRIPTION_ELE_ID)
+		return price, nil, string(SCREENSHOT_ERROR)
+	}
 
 	// cut picture
-	width, height := getDescriptionCutSize(wd, EBAY_DESRIPTION_ELE_ID, EBAY_DESRIPTION_WRAPPER_ID)
-	descriptionImgBytes, err = tools.CutPicture(descriptionImgBytes, 0, 0, width, height)
-	if err != nil {
-		log.Printf("Resize(%d, %d) descriptionImgBytes.error: %v", width, height, err)
+	width, height, err := getDescriptionCutSize(wd, EBAY_DESRIPTION_ELE_ID, EBAY_DESRIPTION_WRAPPER_ID)
+	if err == nil {
+		descriptionImgBytes, err = tools.CutPicture(descriptionImgBytes, 0, 0, width, height)
+		if err != nil {
+			log.Printf("Resize(%d, %d) descriptionImgBytes.error: %v", width, height, err)
+		}
 	}
 
 	// splice
