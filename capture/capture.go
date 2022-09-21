@@ -10,7 +10,7 @@ type ScreenshotsStatus string
 
 // enum status of tarantula
 const (
-	SUCEESS             ScreenshotsStatus = "SUCESS"
+	SUCCESS             ScreenshotsStatus = "SUCCESS"
 	PAGE_ERROR          ScreenshotsStatus = "PAGE_ERROR"
 	SCREENSHOT_ERROR    ScreenshotsStatus = "SCREENSHOT_ERROR"
 	PRICE_ERROR         ScreenshotsStatus = "PRICE_ERROR"

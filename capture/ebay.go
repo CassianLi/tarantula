@@ -211,7 +211,7 @@ func (ebay Ebay) WebScreenshots() (float32, []byte, string) {
 			log.Println("screenshot.error: ", err)
 			return price, nil, string(SCREENSHOT_ERROR)
 		}
-		return price, screenshotBytes, string(SUCEESS)
+		return price, screenshotBytes, string(SUCCESS)
 	}
 
 	return price, nil, string(SCREENSHOT_ERROR)
