@@ -1,6 +1,7 @@
 package capture
 
 import (
+	"errors"
 	"fmt"
 	"github.com/tebeka/selenium"
 	"github.com/tebeka/selenium/firefox"
@@ -35,7 +36,7 @@ func (ebay Ebay) url() string {
 }
 
 // getPrice is a regular expression to get the price
-func getPrice(text string) (float32, error) {
+func getPriceExpr(text string) (float32, error) {
 	reg := regexp.MustCompile(`\d+\.\d+`)
 	s := reg.FindAllString(text, -1)
 	fmt.Println("FindAllString", s)
@@ -104,6 +105,38 @@ func getDescriptionCutSize(wd selenium.WebDriver, eleId string, bottomId string)
 	return size.Width, size.Height - bottomSize.Height, nil
 }
 
+// getPrice Get the price by element id
+func getPrice(wd selenium.WebDriver) (float32, error) {
+	// Get price panel
+	ebayPriceXpaths := []string{
+		"//*[@id=\"prcIsum\"]",
+		"//*[@id=\"mainContent\"]/form/div[2]/div/div[1]/div/div[2]/div[1]/span[1]",
+	}
+
+	for _, xpath := range ebayPriceXpaths {
+		elem, err := wd.FindElement(selenium.ByXPATH, xpath)
+		if err != nil {
+			log.Printf("Price XPath:%s find element error ,price.error:%v", xpath, err)
+		} else {
+			priceText, err := elem.Text()
+			if err != nil {
+				log.Println("Get element text, price.error:", err)
+				return 0.0, err
+			}
+
+			fmt.Println("price text: ", priceText)
+
+			price, err := getPriceExpr(priceText)
+			if err != nil {
+				log.Println("Get element text expr, price.error:", err)
+				return 0.0, err
+			}
+			return price, nil
+		}
+	}
+	return 0.0, errors.New("the element id can not find the price element")
+}
+
 // WebScreenshots
 //  @return float32  the price in web page
 //  @return []byte 	the tarantula of web page
@@ -162,22 +195,11 @@ func (ebay Ebay) WebScreenshots() (float32, []byte, string) {
 	// Resize window
 	//wd = reSizeBrowserWindow(wd)
 
-	// Get price panel
-	elem, err := wd.FindElement(selenium.ByXPATH, "//*[@id=\"prcIsum\"]")
+	// Get price
+	price, err := getPrice(wd)
 	if err != nil {
-		log.Println("price.error:", err)
-		return 0.0, nil, string(PRICE_ERROR)
-	}
-	priceText, err := elem.Text()
-	if err != nil {
-		log.Println("price.error:", err)
-		return 0.0, nil, string(PRICE_ERROR)
-	}
-
-	fmt.Println("price text: ", priceText)
-	price, err := getPrice(priceText)
-	if err != nil {
-		return 0.0, nil, string(PRICE_ERROR)
+		log.Printf("Find price element error: %v \n", err)
+		return price, nil, string(PRICE_ERROR)
 	}
 
 	// Screenshot
