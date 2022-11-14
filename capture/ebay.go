@@ -116,7 +116,7 @@ func getPrice(wd selenium.WebDriver) (float32, error) {
 	for _, xpath := range ebayPriceXpaths {
 		elem, err := wd.FindElement(selenium.ByXPATH, xpath)
 		if err != nil {
-			log.Printf("Price XPath:%s find element error ,price.error:%v", xpath, err)
+			log.Printf("Price XPath:%s find element error ,price.error:%v \n", xpath, err)
 		} else {
 			priceText, err := elem.Text()
 			if err != nil {
