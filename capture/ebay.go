@@ -111,6 +111,7 @@ func getPrice(wd selenium.WebDriver) (float32, error) {
 	ebayPriceXpaths := []string{
 		"//*[@id=\"prcIsum\"]",
 		"//*[@id=\"mainContent\"]/form/div[2]/div/div[1]/div/div[2]/div[1]/span[1]",
+		"//*[@id=\"mainContent\"]/form/div[2]/div/div[1]/div[1]/div/div[2]/div/span[1]/span",
 	}
 
 	for _, xpath := range ebayPriceXpaths {
