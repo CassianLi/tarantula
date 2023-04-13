@@ -7,10 +7,15 @@ import (
 	"gopkg.in/ini.v1"
 	"log"
 	"time"
-	"y-clouds.com/tarantula/ampq"
 	"y-clouds.com/tarantula/capture"
+	"y-clouds.com/tarantula/middleware"
 	"y-clouds.com/tarantula/oss"
 )
+
+type Rabbit struct {
+	Url      string
+	Exchange string
+}
 
 var confFile = flag.String("c", "./conf-local.ini", "Snapshot tool configuration file.")
 
@@ -19,7 +24,7 @@ type AppConf struct {
 	AppMode      string
 	ConsumeQueue string
 	PublishQueue string
-	AmpqConf     *ampq.Rabbit
+	AmpqConf     *Rabbit
 	SeleniumConf *capture.Selenium
 	OssConf      *oss.AliOss
 }
@@ -43,7 +48,7 @@ func setAppConf() {
 	appConf.PublishQueue = publishQueue
 
 	// rabbit conf
-	ampqConf := new(ampq.Rabbit)
+	ampqConf := new(Rabbit)
 	err = cfg.Section("Rabbit").MapTo(ampqConf)
 	if err != nil {
 		log.Fatalf("Missing Rabbit MQ configuration parameters: %v", err)
@@ -97,7 +102,7 @@ func publishScreenshotsResult(msg string, price float32, cutName string, status 
 	response := capture.ScreenshotsResult{}
 	err := json.Unmarshal([]byte(msg), &response)
 	if err != nil {
-		log.Fatalf("ampq message.format_error: %v", err)
+		log.Fatalf("middleware message.format_error: %v", err)
 	}
 	response.Status = status
 	response.NewPrice = price
@@ -107,9 +112,16 @@ func publishScreenshotsResult(msg string, price float32, cutName string, status 
 	if err != nil {
 		log.Fatalf("Resonse json.serialize_error: %v", err)
 	}
-	publishAmpqConf := appConf.AmpqConf
-	publishAmpqConf.Queue = appConf.PublishQueue
-	ampq.Publish(publishAmpqConf, string(rsJson))
+	pubconn := middleware.Connection{
+		Url:          appConf.AmpqConf.Url,
+		Exchange:     appConf.AmpqConf.Exchange,
+		ExchangeType: "direct",
+		Queue:        appConf.PublishQueue,
+	}
+	err = pubconn.Publish(string(rsJson))
+	if err != nil {
+		log.Fatalf("Publish error: %v", err)
+	}
 }
 
 // consumeCallback is the RabbitMQ consumer callback function
@@ -119,7 +131,7 @@ func consumeCallback(msg string) {
 	param := capture.ScreenshotsParam{}
 	err := json.Unmarshal([]byte(msg), &param)
 	if err != nil {
-		log.Fatalf("ampq message.format_error: %v", err)
+		log.Fatalf("middleware message.format_error: %v", err)
 	} //json解析到结构体里面
 
 	// get []byte of tarantula
@@ -144,7 +156,15 @@ func main() {
 	setAppConf()
 
 	// set consume
-	consumeAmpqConf := appConf.AmpqConf
-	consumeAmpqConf.Queue = appConf.ConsumeQueue
-	ampq.Consume(consumeAmpqConf, consumeCallback)
+	consumeConn := middleware.Connection{
+		Url:              appConf.AmpqConf.Url,
+		Exchange:         appConf.AmpqConf.Exchange,
+		ExchangeType:     "direct",
+		Queue:            appConf.ConsumeQueue,
+		Retry:            true,
+		RetryTimes:       20,
+		RetryInterval:    time.Second * 10,
+		ConsumerCallback: consumeCallback,
+	}
+	consumeConn.Consumer()
 }

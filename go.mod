@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/aliyun/aliyun-oss-go-sdk v2.2.4+incompatible
-	github.com/streadway/amqp v1.0.0
+	github.com/rabbitmq/amqp091-go v1.5.0
 	github.com/tebeka/selenium v0.9.9
 	gopkg.in/ini.v1 v1.66.6
 )

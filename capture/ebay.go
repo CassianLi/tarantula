@@ -1,6 +1,7 @@
 package capture
 
 import (
+	"errors"
 	"fmt"
 	"github.com/tebeka/selenium"
 	"github.com/tebeka/selenium/firefox"
@@ -30,12 +31,12 @@ type Ebay struct {
 //  @Description: Make url of ebay
 //  @receiver ebay
 //  @return string
-func (ebay Ebay) Url() string {
+func (ebay Ebay) url() string {
 	return fmt.Sprintf(EBAY_URL_PREFIX, ebay.Asin)
 }
 
 // getPrice is a regular expression to get the price
-func getPrice(text string) (float32, error) {
+func getPriceExpr(text string) (float32, error) {
 	reg := regexp.MustCompile(`\d+\.\d+`)
 	s := reg.FindAllString(text, -1)
 	fmt.Println("FindAllString", s)
@@ -75,6 +76,7 @@ func reSizeBrowserWindow(wd selenium.WebDriver) selenium.WebDriver {
 func elementScreenshots(wd selenium.WebDriver, eleId string) ([]byte, error) {
 	ele, err := wd.FindElement(selenium.ByID, eleId)
 	if err != nil {
+		fmt.Println("By.ID ElementScreenshots error:", err)
 		return nil, err
 	}
 
@@ -101,6 +103,39 @@ func getDescriptionCutSize(wd selenium.WebDriver, eleId string, bottomId string)
 	bottomSize, _ := bootomEle.Size()
 
 	return size.Width, size.Height - bottomSize.Height, nil
+}
+
+// getPrice Get the price by element id
+func getPrice(wd selenium.WebDriver) (float32, error) {
+	// Get price panel
+	ebayPriceXpaths := []string{
+		"//*[@id=\"prcIsum\"]",
+		"//*[@id=\"mainContent\"]/form/div[2]/div/div[1]/div/div[2]/div[1]/span[1]",
+		"//*[@id=\"mainContent\"]/form/div[2]/div/div[1]/div[1]/div/div[2]/div/span[1]/span",
+	}
+
+	for _, xpath := range ebayPriceXpaths {
+		elem, err := wd.FindElement(selenium.ByXPATH, xpath)
+		if err != nil {
+			log.Printf("Price XPath:%s find element error ,price.error:%v \n", xpath, err)
+		} else {
+			priceText, err := elem.Text()
+			if err != nil {
+				log.Println("Get element text, price.error:", err)
+				return 0.0, err
+			}
+
+			fmt.Println("price text: ", priceText)
+
+			price, err := getPriceExpr(priceText)
+			if err != nil {
+				log.Println("Get element text expr, price.error:", err)
+				return 0.0, err
+			}
+			return price, nil
+		}
+	}
+	return 0.0, errors.New("the element id can not find the price element")
 }
 
 // WebScreenshots
@@ -153,7 +188,7 @@ func (ebay Ebay) WebScreenshots() (float32, []byte, string) {
 	defer wd.Quit()
 
 	// Navigate to the simple playground interface.
-	if err := wd.Get(ebay.Url()); err != nil {
+	if err := wd.Get(ebay.url()); err != nil {
 		log.Println("web.open:", err)
 		return 0.0, nil, string(PAGE_ERROR)
 	}
@@ -161,34 +196,24 @@ func (ebay Ebay) WebScreenshots() (float32, []byte, string) {
 	// Resize window
 	//wd = reSizeBrowserWindow(wd)
 
-	// Get price panel
-	elem, err := wd.FindElement(selenium.ByXPATH, "//*[@id=\"prcIsum\"]")
+	// Get price
+	price, err := getPrice(wd)
 	if err != nil {
-		log.Println("price.error:", err)
-		return 0.0, nil, string(PRICE_ERROR)
-	}
-	priceText, err := elem.Text()
-	if err != nil {
-		log.Println("price.error:", err)
-		return 0.0, nil, string(PRICE_ERROR)
-	}
-
-	fmt.Println("price text: ", priceText)
-	price, err := getPrice(priceText)
-	if err != nil {
-		return 0.0, nil, string(PRICE_ERROR)
+		log.Printf("Find price element error: %v \n", err)
+		return price, nil, string(PRICE_ERROR)
 	}
 
 	// Screenshot
 	// cut two image to one
 	detailImgBytes, err := elementScreenshots(wd, EBAY_DETAIL_ELE_ID)
-	if err != nil {
+	if err != nil || len(detailImgBytes) == 0 {
 		log.Printf("Cant find element by.ID: %s \n", EBAY_DETAIL_ELE_ID)
 		return price, nil, string(SCREENSHOT_ERROR)
 	}
+	fmt.Println("len(detailImgBytes): ", len(detailImgBytes))
 
 	descriptionImgBytes, err := elementScreenshots(wd, EBAY_DESRIPTION_ELE_ID)
-	if err != nil {
+	if err != nil || len(descriptionImgBytes) == 0 {
 		log.Printf("Cant find element by.ID: %s \n", EBAY_DESRIPTION_ELE_ID)
 		return price, nil, string(SCREENSHOT_ERROR)
 	}
@@ -202,13 +227,16 @@ func (ebay Ebay) WebScreenshots() (float32, []byte, string) {
 		}
 	}
 
-	// splice
-	screenshotBytes, err := tools.SplicePicsBytes(detailImgBytes, descriptionImgBytes, true, "png")
-
-	if err != nil {
-		log.Println("screenshot.error: ", err)
-		return price, nil, string(SCREENSHOT_ERROR)
+	if len(detailImgBytes) > 0 && len(descriptionImgBytes) > 0 {
+		// splice
+		screenshotBytes, err := tools.SplicePicsBytes(detailImgBytes, descriptionImgBytes, true, "png")
+		if err != nil {
+			log.Println("screenshot.error: ", err)
+			return price, nil, string(SCREENSHOT_ERROR)
+		}
+		return price, screenshotBytes, string(SUCCESS)
 	}
 
-	return price, screenshotBytes, string(SUCCESS)
+	return price, nil, string(SCREENSHOT_ERROR)
+
 }
