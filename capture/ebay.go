@@ -15,7 +15,7 @@ import (
 const (
 	// EBAY_URL_PREFIX is the ebay url prefix
 	EBAY_URL_PREFIX            = "https://www.ebay.com/itm/%v"
-	EBAY_DETAIL_ELE_ID         = "CenterPanelInternal"
+	EBAY_DETAIL_ELE_ID         = "mainContent"
 	EBAY_DESRIPTION_ELE_ID     = "vi-desc-maincntr"
 	EBAY_DESRIPTION_WRAPPER_ID = "desc_wrapper_ctr"
 )
@@ -82,8 +82,10 @@ func elementScreenshots(wd selenium.WebDriver, eleId string) ([]byte, error) {
 
 	eleImage, err := ele.Screenshot(true)
 	if err != nil {
+		fmt.Println("ElementScreenshots error:", err)
 		return nil, err
 	}
+	fmt.Println("len(eleImage):", len(eleImage))
 
 	return eleImage, nil
 }
