@@ -14,17 +14,24 @@ import (
 
 const (
 	// EBAY_URL_PREFIX is the ebay url prefix
-	EBAY_URL_PREFIX            = "https://www.ebay.com/itm/%v"
-	EBAY_DETAIL_ELE_ID         = "mainContent"
-	EBAY_DESRIPTION_ELE_ID     = "vi-desc-maincntr"
-	EBAY_DESRIPTION_WRAPPER_ID = "desc_wrapper_ctr"
+	EBAY_URL_PREFIX = "https://www.ebay.com/itm/%v"
+	//EBAY_DETAIL_ELE_ID         = "mainContent"
+	//EBAY_DESRIPTION_ELE_ID     = "vi-desc-maincntr"
+	//EBAY_DESRIPTION_WRAPPER_ID = "desc_wrapper_ctr"
 )
+
+type EbayConf struct {
+	DetailEleID             string
+	DescriptionEleID        string
+	DescriptionWrapperEleID string
+}
 
 // Ebay is the ebay params
 type Ebay struct {
 	Asin       string
 	DriverPath string
 	Port       int
+	EbayConf   *EbayConf
 }
 
 // Url
@@ -207,21 +214,21 @@ func (ebay Ebay) WebScreenshots() (float32, []byte, string) {
 
 	// Screenshot
 	// cut two image to one
-	detailImgBytes, err := elementScreenshots(wd, EBAY_DETAIL_ELE_ID)
+	detailImgBytes, err := elementScreenshots(wd, ebay.EbayConf.DetailEleID)
 	if err != nil || len(detailImgBytes) == 0 {
-		log.Printf("Cant find element by.ID: %s \n", EBAY_DETAIL_ELE_ID)
+		log.Printf("Cant find element by.ID: %s \n", ebay.EbayConf.DetailEleID)
 		return price, nil, string(SCREENSHOT_ERROR)
 	}
 	fmt.Println("len(detailImgBytes): ", len(detailImgBytes))
 
-	descriptionImgBytes, err := elementScreenshots(wd, EBAY_DESRIPTION_ELE_ID)
+	descriptionImgBytes, err := elementScreenshots(wd, ebay.EbayConf.DescriptionEleID)
 	if err != nil || len(descriptionImgBytes) == 0 {
-		log.Printf("Cant find element by.ID: %s \n", EBAY_DESRIPTION_ELE_ID)
+		log.Printf("Cant find element by.ID: %s \n", ebay.EbayConf.DescriptionEleID)
 		return price, nil, string(SCREENSHOT_ERROR)
 	}
 
 	// cut picture
-	width, height, err := getDescriptionCutSize(wd, EBAY_DESRIPTION_ELE_ID, EBAY_DESRIPTION_WRAPPER_ID)
+	width, height, err := getDescriptionCutSize(wd, ebay.EbayConf.DescriptionEleID, ebay.EbayConf.DescriptionWrapperEleID)
 	if err == nil {
 		descriptionImgBytes, err = tools.CutPicture(descriptionImgBytes, 0, 0, width, height)
 		if err != nil {

@@ -27,6 +27,7 @@ type AppConf struct {
 	AmpqConf     *Rabbit
 	SeleniumConf *capture.Selenium
 	OssConf      *oss.AliOss
+	EbayConf     *capture.EbayConf
 }
 
 var appConf = new(AppConf)
@@ -70,6 +71,14 @@ func setAppConf() {
 		log.Fatalf("Missing Ali oss configurationparameters: %v", err)
 	}
 	appConf.OssConf = aliOss
+
+	// ebay conf
+	ebayConf := new(capture.EbayConf)
+	err = cfg.Section("Ebay").MapTo(ebayConf)
+	if err != nil {
+		log.Fatalf("Missing Ebay configurationparameters: %v", err)
+	}
+	appConf.EbayConf = ebayConf
 }
 
 // GetEbayWebScreenshots is start to get tarantula
@@ -79,6 +88,7 @@ func getEbayWebScreenshots(asin string) (float32, []byte, string) {
 		Asin:       asin,
 		DriverPath: seleniumConf.DriverPath,
 		Port:       seleniumConf.Port,
+		EbayConf:   appConf.EbayConf,
 	}
 
 	return ebay.WebScreenshots()
